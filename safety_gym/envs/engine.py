@@ -1234,34 +1234,20 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
     def closest_distance(self):
 
+        """ Return the Closest Distance """
+
         # Ensure Positions and Contacts are Correct
         self.sim.forward()
 
         if self.constrain_hazards:
 
-            min_dis_to_hazard = 1e8
-            
-            for h_pos in self.hazards_pos:
-                
-                # Compute Hazard Distance
-                h_dist = self.dist_xy(h_pos)
-                if h_dist < min_dis_to_hazard: min_dis_to_hazard = h_dist
-                else: continue
-
-            return min_dis_to_hazard
+            # Compute Minimum Hazard Distance
+            return min(self.dist_xy(h_pos) for h_pos in self.hazards_pos)
 
         elif self.constrain_pillars:
-            
-            min_dis_to_pillar = 1e8
 
-            for p_pos in self.pillars_pos:
-
-                # Compute Pillar Distance
-                p_dist = self.dist_xy(p_pos)
-                if p_dist < min_dis_to_pillar:  min_dis_to_pillar= p_dist
-                else: continue
-
-            return min_dis_to_pillar
+            # Compute Minimum Pillar Distance
+            return min(self.dist_xy(p_pos) for p_pos in self.pillars_pos)
 
         else: raise NotImplementedError
 
@@ -1274,87 +1260,32 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         if self.constrain_hazards:
 
-            closest_distance_cost = 0
-            min_dis_to_hazard = 1e8
-
-            for h_pos in self.hazards_pos:
-
-                # Compute Hazard Distance
-                h_dist = self.dist_xy(h_pos)
-
-                if h_dist < min_dis_to_hazard:
-                    
-                    min_dis_to_hazard = h_dist
-                    closest_distance_cost = self.hazards_size - min_dis_to_hazard
-                    
-                else: continue
-
-            return closest_distance_cost
+            # Compute Hazards Closest Distance the Cost
+            return self.hazards_size - min(self.dist_xy(h_pos) for h_pos in self.hazards_pos)
 
         elif self.constrain_pillars:
 
-            closest_distance_cost = 0
-            min_dis_to_pillar = 1e8
-
-            for p_pos in self.pillars_pos:
-
-                # Compute Pillar Distance
-                p_dist = self.dist_xy(p_pos)
-
-                if p_dist < min_dis_to_pillar:
-                    
-                    min_dis_to_pillar= p_dist
-                    closest_distance_cost = (self.pillars_size + self.robot_keepout -0.3)- min_dis_to_pillar
-                    
-                else: continue
-
-            return closest_distance_cost
+            # Compute Pillars Closest Distance the Cost
+            return (self.pillars_size + self.robot_keepout - 0.3) - min(self.dist_xy(p_pos) for p_pos in self.pillars_pos)
 
         else: raise NotImplementedError
 
-    def closest_distance_cost_n(self, n=2):
+    def closest_distance_cost_n(self, n:int=2):
 
         """ Return the Cost = (Hazard Radius) ** n - (Distance to Closest Hazard) ** n """
- 
+
         # Ensure Positions and Contacts are Correct
         self.sim.forward()
 
         if self.constrain_hazards:
 
-            closest_distance_cost = 0
-            min_dis_to_hazard = 1e8
-
-            for h_pos in self.hazards_pos:
-
-                # Compute Hazard Distance
-                h_dist = self.dist_xy(h_pos)
-                if h_dist < min_dis_to_hazard:
-                    
-                    min_dis_to_hazard = h_dist
-                    closest_distance_cost = self.hazards_size ** n - min_dis_to_hazard ** n
-    
-                else: continue
-
-            return closest_distance_cost
+            # Compute Hazards Closest Distance the Cost ** n
+            return self.hazards_size ** n - min(self.dist_xy(h_pos) ** n for h_pos in self.hazards_pos)
 
         elif self.constrain_pillars:
-            
-            closest_distance_cost = 0
-            min_dis_to_pillar = 1e8
 
-            for p_pos in self.pillars_pos:
-
-                # Compute Pillar Distance
-                p_dist = self.dist_xy(p_pos)
-                
-                if p_dist < min_dis_to_pillar:
-                    
-                    min_dis_to_pillar= p_dist
-                    closest_distance_cost = (self.pillars_size + self.robot_keepout -0.3) ** n - min_dis_to_pillar ** n
-                    
-                else: continue
-                    
-            return closest_distance_cost
+            # Compute Pillars Closest Distance the Cost ** n
+            return (self.pillars_size + self.robot_keepout - 0.3) ** n - min(self.dist_xy(p_pos) ** n for p_pos in self.pillars_pos)
 
         else: raise NotImplementedError
 
