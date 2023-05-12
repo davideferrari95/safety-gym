@@ -1401,7 +1401,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 # Select the Largest Safety Index
                 if phi_tmp > phi: phi, index = phi_tmp, cnt
 
-            return phi
+            return index
 
         else: raise NotImplementedError
 
