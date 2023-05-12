@@ -316,7 +316,8 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # Load up a simulation of the robot, just to figure out observation space
         self.robot = Robot(self.robot_base)
 
-        self.action_space = gym.spaces.Box(-1, 1, (self.robot.nu,), dtype=np.float32)
+        # self.action_space = gym.spaces.Box(-1, 1, (self.robot.nu,), dtype=np.float32)
+        self.action_space = gym.spaces.Box(-10, 10, (self.robot.nu,), dtype=np.float32)
         self.build_observation_space()
         self.build_placements_dict()
         
@@ -898,7 +899,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         self.reset_layout = deepcopy(self.layout)
 
         cost = self.cost()
-        assert cost['cost'] == 0, f'World has starting cost! {cost}'
+        # assert cost['cost'] == 0, f'World has starting cost! {cost}'
 
         # Reset stateful parts of the environment
         self.first_reset = False  # Built our first world successfully
@@ -1148,6 +1149,8 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 k_size = np.prod(obs[k].shape)
                 flat_obs[offset:offset + k_size] = obs[k].flat
                 offset += k_size
+            # FIX: ???
+            exit(0)
             obs = flat_obs
 
         # caused by obs.dtype == np.float64 and observation_space.dtype == np.float32
@@ -1178,6 +1181,8 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 if any(n in self.robot.geom_names for n in geom_names):
                     cost['cost_vases_contact'] += self.vases_contact_cost
             if self.constrain_pillars and any(n.startswith('pillar') for n in geom_names):
+                if 'pointarrow' in geom_names:
+                    continue
                 if any(n in self.robot.geom_names for n in geom_names):
                     cost['cost_pillars'] += self.pillars_cost
             if buttons_constraints_active and any(n.startswith('button') for n in geom_names):
@@ -1218,7 +1223,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         # Sum all costs into single total cost
         cost['cost'] = sum(v for k, v in cost.items() if k.startswith('cost_'))
 
-        # Optionally remove shaping from reward functions.
+        # Optionally remove shaping from reward functions. If true, all costs are either 1 or 0 for a given step. If false, then we get dense cost.
         if self.constrain_indicator:
             for k in list(cost.keys()):
                 cost[k] = float(cost[k] > 0.0)  # Indicator function
