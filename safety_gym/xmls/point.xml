@@ -4,8 +4,8 @@
     <default>
         <geom condim="6" density="1" rgba="1 0 0 1"/>
         <joint damping=".001"/>
-        <motor ctrlrange="-1 1" ctrllimited="true" forcerange="-.05 .05" forcelimited="true"/>
-        <velocity ctrlrange="-1 1" ctrllimited="true" forcerange="-.05 .05" forcelimited="true"/>
+        <motor ctrlrange="-10 10" ctrllimited="true" forcerange="-.05 .05" forcelimited="true"/>
+        <velocity ctrlrange="-10 10" ctrllimited="true" forcerange="-.05 .05" forcelimited="true"/>
         <site size="0.032" type="sphere"/>
     </default>
     <worldbody>
@@ -35,6 +35,6 @@
     </sensor>
     <actuator>
         <motor gear="0.3 0 0 0 0 0" site="robot" name="x"/>
-        <motor gear="0 0 0 0 0 0.1" site="robot" name="rz"/>
+        <velocity gear="0.3" jointinparent="z" name="z"/>
     </actuator>
 </mujoco>
