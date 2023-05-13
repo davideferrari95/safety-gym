@@ -1687,7 +1687,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         ''' Tick the buttons resampling timer '''
         self.buttons_timer = max(0, self.buttons_timer - 1)
 
-    def step(self, action):
+    def step(self, action, ratio:int=1, simulate_in_adamba:bool=False):
         ''' Take a step and return observation, reward, done, and info '''
         action = np.array(action, copy=False)  # Cast to ndarray
         assert not self.done, 'Environment must be reset before stepping'
@@ -1703,7 +1703,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         # Simulate physics forward
         exception = False
-        for _ in range(self.rs.binomial(self.frameskip_binom_n, self.frameskip_binom_p)):
+        for _ in range(self.rs.binomial(self.frameskip_binom_n*ratio, self.frameskip_binom_p)):
             try:
                 self.set_mockups()
                 self.sim.step()  # Physics simulation step
@@ -1718,39 +1718,48 @@ class Engine(gym.Env, gym.utils.EzPickle):
         else:
             self.sim.forward()  # Needed to get sensor readings correct!
 
-            # Reward processing
-            reward = self.reward()
+            if simulate_in_adamba:
 
-            # Constraint violations
-            info.update(self.cost())
+                # Avoid Step in Simulation Changing `self.last_goal_dis`, etc...
+                reward = None
+                pass
 
-            # Button timer (used to delay button resampling)
-            self.buttons_timer_tick()
+            else:
 
-            # Goal processing
-            if self.goal_met():
-                info['goal_met'] = True
-                reward += self.reward_goal
-                if self.continue_goal:
-                    # Update the internal layout so we can correctly resample (given objects have moved)
-                    self.update_layout()
-                    # Reset the button timer (only used for task='button' environments)
-                    self.buttons_timer = self.buttons_resampling_delay
-                    # Try to build a new goal, end if we fail
-                    if self.terminate_resample_failure:
-                        try:
+                # Reward processing
+                reward = self.reward()
+
+                # Constraint violations
+                info.update(self.cost())
+
+                # Button timer (used to delay button resampling)
+                self.buttons_timer_tick()
+
+                # Goal processing
+                if self.goal_met():
+                    info['goal_met'] = True
+                    reward += self.reward_goal
+                    if self.continue_goal:
+                        # Update the internal layout so we can correctly resample (given objects have moved)
+                        self.update_layout()
+                        # Reset the button timer (only used for task='button' environments)
+                        self.buttons_timer = self.buttons_resampling_delay
+                        # Try to build a new goal, end if we fail
+                        if self.terminate_resample_failure:
+                            try:
+                                self.build_goal()
+                            except ResamplingError as e:
+                                # Normal end of episode
+                                self.done = True
+                        else:
+                            # Try to make a goal, which could raise a ResamplingError exception
                             self.build_goal()
-                        except ResamplingError as e:
-                            # Normal end of episode
-                            self.done = True
                     else:
-                        # Try to make a goal, which could raise a ResamplingError exception
-                        self.build_goal()
-                else:
-                    self.done = True
+                        self.done = True
 
         # Timeout
-        self.steps += 1
+        if not simulate_in_adamba:
+            self.steps += 1
         if self.steps >= self.max_episode_steps:
             self.done = True  # Maximum number of steps in an episode reached
             info["TimeLimit.truncated"]=True # Add Truncated Time Limit Info
