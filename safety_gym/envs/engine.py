@@ -1289,7 +1289,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else: raise NotImplementedError
 
-    def adaptive_safety_index(self, k=2, sigma=0.04, n=2):
+    def adaptive_safety_index(self, k:float=2, sigma:float=0.04, n:float=2) -> float:
 
         """ Synthesis the Safety Index that Ensures the Valid Solution """
 
@@ -1345,7 +1345,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else: raise NotImplementedError
 
-    def adaptive_safety_index_index(self, k=2, sigma=0.04, n=2):
+    def adaptive_safety_index_index(self, k:float=2, sigma:float=0.04, n:float=2) -> int:
 
         """ Return the Index of the Synthesized Safety Index that Ensures the Valid Solution """
 
@@ -1405,7 +1405,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else: raise NotImplementedError
 
-    def projection_cost_max(self, margin=0.4):
+    def projection_cost_max(self, margin:float=0.4):
 
         """ Projection Cost -> MAX """
 
@@ -1454,7 +1454,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else: raise NotImplementedError
 
-    def projection_cost_argmin_dis(self, margin=0.4):
+    def projection_cost_argmin_dis(self, margin:float=0.4):
 
         """ Projection Cost -> ARGMIN Closet Distance """
 
@@ -1520,7 +1520,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else: raise NotImplementedError
 
-    def projection_cost_index_max(self, margin=0.4):
+    def projection_cost_index_max(self, margin:float=0.4):
 
         """ Projection Cost -> MAX Index """
 
@@ -1577,7 +1577,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else: raise NotImplementedError
 
-    def projection_cost_index_argmin_dis(self, margin=0.4):
+    def projection_cost_index_argmin_dis(self, margin:float=0.4):
 
         index = None
 
