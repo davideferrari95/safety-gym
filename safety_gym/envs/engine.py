@@ -1150,7 +1150,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 flat_obs[offset:offset + k_size] = obs[k].flat
                 offset += k_size
             # FIX: ???
-            exit(0)
+            # exit(0)
             obs = flat_obs
 
         # caused by obs.dtype == np.float64 and observation_space.dtype == np.float32
@@ -1465,7 +1465,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
         if self.constrain_hazards:
 
             # Initialize Projection Cost
-            projection_cost, min_dis_to_pillar = 0, 1e8
+            projection_cost, min_dis_to_hazard = 0, 1e8
 
             for h_pos in self.hazards_pos:
 
