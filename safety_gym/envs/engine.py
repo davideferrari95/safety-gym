@@ -1279,12 +1279,10 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         """
 
-        index = None
+        # Initialize Safety Index and the Index Counter
+        phi, cnt, index = -1e8, -1, None
 
         if self.constrain_hazards:
-
-            # Initialize Safety Index and the Index Counter
-            phi, cnt = -1e8, -1
 
             # Iterate the Hazard to Compute the Maximum Safety Index 
             for h_pos in self.hazards_pos:
@@ -1309,9 +1307,6 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         elif self.constrain_pillars:
 
-            # Initialize Safety Index and the Index Counter
-            phi, cnt = -1e8, -1
-
             # Iterate the Pillars to Compute the Maximum Safety Index
             for p_pos in self.pillars_pos:
 
@@ -1335,20 +1330,25 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else: raise NotImplementedError
 
-    def projection_cost_max(self, margin:float=0.4):
+    def projection_cost_max(self, margin:float=0.4) -> Tuple[float, int]:
 
         """ Projection Cost -> MAX """
 
         # Ensure Positions and Contacts are Correct
         self.sim.forward()
 
-        # Initialize Projection Cost
-        max_projection_cost = -1e8
+        # Initialize Projection Cost and Counter
+        max_projection_cost, cnt = -1e8, -1
+
+        index = None
 
         # Calculate the Projection Cost, Not Accounted in the Sum of Cost (Just for AdamBA Methods Simulating)
         if self.constrain_hazards:
 
             for h_pos in self.hazards_pos:
+
+                # Increase Counter
+                cnt+=1
 
                 # Calculate the Hitting Angle (Only x,y Matter)
                 hitting_direction = self.data.get_body_xvelp('robot')[0:2]
@@ -1359,14 +1359,17 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 # Compute the Projection Cost
                 projection_cost = (self.hazards_size + margin) ** 2 - ((robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
 
-                # Get Maximum Projection Cost
-                if projection_cost > max_projection_cost: max_projection_cost = projection_cost
+                # Get Maximum Projection Cost and Index
+                if projection_cost > max_projection_cost: max_projection_cost, index = projection_cost, cnt
 
-            return max_projection_cost
+            return max_projection_cost, index
 
         elif self.constrain_pillars:
 
             for p_pos in self.pillars_pos:
+
+                # Increase Counter
+                cnt+=1
 
                 # Calculate the Hitting Angle (Only x,y Matter)
                 hitting_direction = self.data.get_body_xvelp('robot')[0:2]
@@ -1377,10 +1380,10 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 # Compute the Projection Cost
                 projection_cost = ((self.pillars_size + self.robot_keepout -0.3) + margin) ** 2 - ((robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
 
-                # Get Maximum Projection Cost
-                if projection_cost > max_projection_cost: max_projection_cost = projection_cost
+                # Get Maximum Projection Cost and Index
+                if projection_cost > max_projection_cost: max_projection_cost, index = projection_cost, cnt
 
-            return max_projection_cost
+            return max_projection_cost, index
 
         else: raise NotImplementedError
 
@@ -1447,63 +1450,6 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 else: continue
 
             return projection_cost
-
-        else: raise NotImplementedError
-
-    def projection_cost_index_max(self, margin:float=0.4):
-
-        """ Projection Cost -> MAX Index """
-
-        index = None
-
-        # Calculate the Projection Cost, Not Accounted in the Sum of Cost (Just for AdamBA Methods Simulating)
-        if self.constrain_hazards:
-
-            # Initialize Projection Cost and Counter
-            max_projection_cost, cnt = -1e8, -1
-
-            for h_pos in self.hazards_pos:
-
-                # Increase Counter
-                cnt+=1
-
-                # Calculate the Hitting Angle (Only x,y Matter)
-                hitting_direction = self.data.get_body_xvelp('robot')[0:2]
-                robot_pos = self.world.robot_pos()
-                robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])
-
-                # Compute the Projection Cost
-                projection_cost = (self.hazards_size + margin) ** 2 - ((robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
-
-                # Get Maximum Projection Cost Index
-                if projection_cost > max_projection_cost: max_projection_cost, index = projection_cost, cnt
-
-            return index
-
-        elif self.constrain_pillars:
-
-            # Initialize Projection Cost and Counter
-            max_projection_cost, cnt = -1e8, -1
-
-            for p_pos in self.pillars_pos:
-
-                # Increase Counter
-                cnt+=1
-
-                # Calculate the Hitting Angle (Only x,y Matter)
-                hitting_direction = self.data.get_body_xvelp('robot')[0:2]
-                robot_pos = self.world.robot_pos()
-                robot_to_pillar_direction = (p_pos - robot_pos)[0:2]
-                hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])
-
-                # Compute the Projection Cost
-                projection_cost = ((self.pillars_size + self.robot_keepout -0.3)+ margin) ** 2 - ((robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
-
-                # Get Maximum Projection Cost
-                if projection_cost > max_projection_cost: max_projection_cost, index = projection_cost, cnt
-
-            return index
 
         else: raise NotImplementedError
 
