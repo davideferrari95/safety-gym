@@ -8,7 +8,7 @@ from copy import deepcopy
 from collections import OrderedDict
 import mujoco_py
 from mujoco_py import MjViewer, MujocoException, const, MjRenderContextOffscreen
-from typing import Optional
+from typing import Optional, Tuple
 
 from gym.utils.step_api_compatibility import convert_to_terminated_truncated_step_api
 from safety_gym.envs.world import World, Robot
@@ -1232,9 +1232,16 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         return cost
 
-    def closest_distance(self):
+    def closest_distance_cost(self, n:int=1) -> Tuple[float, float]:
 
-        """ Return the Closest Distance """
+        """ Compute Closest Distance and Cost
+
+            Return:
+
+                Closest Cost = (Hazard Radius) ** n - (Distance to Closest Hazard) ** n
+                Closest Distance
+
+        """
 
         # Ensure Positions and Contacts are Correct
         self.sim.forward()
@@ -1242,52 +1249,22 @@ class Engine(gym.Env, gym.utils.EzPickle):
         if self.constrain_hazards:
 
             # Compute Minimum Hazard Distance
-            return min(self.dist_xy(h_pos) for h_pos in self.hazards_pos)
+            closest_distance = min(self.dist_xy(h_pos) for h_pos in self.hazards_pos)
+
+            # Compute Hazards Closest Distance the Cost ** n
+            closest_distance_cost = self.hazards_size ** n - min(self.dist_xy(h_pos) ** n for h_pos in self.hazards_pos)
 
         elif self.constrain_pillars:
 
             # Compute Minimum Pillar Distance
-            return min(self.dist_xy(p_pos) for p_pos in self.pillars_pos)
-
-        else: raise NotImplementedError
-
-    def closest_distance_cost(self):
-
-        """ Return the Cost = (Hazard Radius) - (Distance to Closest Hazard) """
-
-        # Ensure Positions and Contacts are Correct
-        self.sim.forward()
-
-        if self.constrain_hazards:
-
-            # Compute Hazards Closest Distance the Cost
-            return self.hazards_size - min(self.dist_xy(h_pos) for h_pos in self.hazards_pos)
-
-        elif self.constrain_pillars:
-
-            # Compute Pillars Closest Distance the Cost
-            return (self.pillars_size + self.robot_keepout - 0.3) - min(self.dist_xy(p_pos) for p_pos in self.pillars_pos)
-
-        else: raise NotImplementedError
-
-    def closest_distance_cost_n(self, n:int=2):
-
-        """ Return the Cost = (Hazard Radius) ** n - (Distance to Closest Hazard) ** n """
-
-        # Ensure Positions and Contacts are Correct
-        self.sim.forward()
-
-        if self.constrain_hazards:
-
-            # Compute Hazards Closest Distance the Cost ** n
-            return self.hazards_size ** n - min(self.dist_xy(h_pos) ** n for h_pos in self.hazards_pos)
-
-        elif self.constrain_pillars:
+            closest_distance = min(self.dist_xy(p_pos) for p_pos in self.pillars_pos)
 
             # Compute Pillars Closest Distance the Cost ** n
-            return (self.pillars_size + self.robot_keepout - 0.3) ** n - min(self.dist_xy(p_pos) ** n for p_pos in self.pillars_pos)
+            closest_distance_cost = (self.pillars_size + self.robot_keepout - 0.3) ** n - min(self.dist_xy(p_pos) ** n for p_pos in self.pillars_pos)
 
         else: raise NotImplementedError
+
+        return closest_distance_cost, closest_distance
 
     def adaptive_safety_index(self, k:float=2, sigma:float=0.04, n:float=2) -> float:
 
