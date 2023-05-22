@@ -1239,6 +1239,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             Return:
 
                 Closest Cost = (Hazard Radius) ** n - (Distance to Closest Hazard) ** n
+
                 Closest Distance
 
         """
@@ -1266,65 +1267,17 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         return closest_distance_cost, closest_distance
 
-    def adaptive_safety_index(self, k:float=2, sigma:float=0.04, n:float=2) -> float:
+    def adaptive_safety_index(self, k:float=2, sigma:float=0.04, n:float=2) -> Tuple[float, int]:
 
-        """ Synthesis the Safety Index that Ensures the Valid Solution """
+        """ Synthesis the Safety Index that Ensures the Valid Solution
 
-        if self.constrain_hazards:
+            Return:
 
-            # Initialize Safety Index
-            phi = -1e8
+                Safety Index that Ensures the Valid Solution
 
-            # Iterate the Hazard to Compute the Maximum Safety Index 
-            for h_pos in self.hazards_pos:
+                Index of the Synthesized Safety Index
 
-                # Compute the Distance
-                h_dist = self.dist_xy(h_pos)
-
-                # Compute Velocity (vel < 0 -> Getting Closer to Hazard)
-                vel_vec = self.data.get_body_xvelp('robot')[0:2]
-                robot_pos = self.world.robot_pos()
-                robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                h_dist_dot = -np.dot(vel_vec, robot_to_hazard_direction) / np.linalg.norm(robot_to_hazard_direction)
-
-                # Compute the Safety Index
-                phi_tmp = sigma + self.hazards_size ** n - h_dist ** n - k * h_dist_dot
-
-                # Select the Largest Safety Index
-                if phi_tmp > phi: phi = phi_tmp
-
-            return phi
-
-        elif self.constrain_pillars:
-
-            # Initialize Safety Index
-            phi = -1e8
-
-            # Iterate the Pillars to Compute the Maximum Safety Index
-            for p_pos in self.pillars_pos:
-
-                # Compute the Distance
-                p_dist = self.dist_xy(p_pos)
-
-                # Compute Velocity (vel < 0 -> Getting Closer to Hazard)
-                vel_vec = self.data.get_body_xvelp('robot')[0:2]
-                robot_pos = self.world.robot_pos()
-                robot_to_pillar_direction = (p_pos - robot_pos)[0:2]
-                p_dist_dot = -np.dot(vel_vec, robot_to_pillar_direction) / np.linalg.norm(robot_to_pillar_direction)
-
-                # Compute the Safety Index
-                phi_tmp = sigma + (self.pillars_size + self.robot_keepout -0.3) ** n - p_dist ** n - k * p_dist_dot
-
-                # Select the Largest Safety Index
-                if phi_tmp > phi: phi = phi_tmp
-
-            return phi
-
-        else: raise NotImplementedError
-
-    def adaptive_safety_index_index(self, k:float=2, sigma:float=0.04, n:float=2) -> int:
-
-        """ Return the Index of the Synthesized Safety Index that Ensures the Valid Solution """
+        """
 
         index = None
 
@@ -1333,7 +1286,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
             # Initialize Safety Index and the Index Counter
             phi, cnt = -1e8, -1
 
-            # Iterate the Hazard to Compute the Maximum Safety Index
+            # Iterate the Hazard to Compute the Maximum Safety Index 
             for h_pos in self.hazards_pos:
 
                 # Compute the Distance
@@ -1352,7 +1305,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 # Select the Largest Safety Index
                 if phi_tmp > phi: phi, index = phi_tmp, cnt
 
-            return index
+            return phi, index
 
         elif self.constrain_pillars:
 
@@ -1378,7 +1331,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 # Select the Largest Safety Index
                 if phi_tmp > phi: phi, index = phi_tmp, cnt
 
-            return index
+            return phi, index
 
         else: raise NotImplementedError
 
