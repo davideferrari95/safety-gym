@@ -1387,81 +1387,18 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
         else: raise NotImplementedError
 
-    def projection_cost_argmin_dis(self, margin:float=0.4):
+    def projection_cost_argmin_dis(self, margin:float=0.4) -> Tuple[float, int]:
 
         """ Projection Cost -> ARGMIN Closet Distance """
 
         # Ensure Positions and Contacts are Correct
         self.sim.forward()
 
+        # Initialize Projection Cost and Counter
+        projection_cost, min_dist, cnt, index = 0, 1e8, -1, None
+            
         # Calculate the Projection Cost, Not Accounted in the Sum of Cost (Just for AdamBA Methods Simulating)
         if self.constrain_hazards:
-
-            # Initialize Projection Cost
-            projection_cost, min_dis_to_hazard = 0, 1e8
-
-            for h_pos in self.hazards_pos:
-
-                # Compute the Distance
-                h_dist = self.dist_xy(h_pos)
-
-                if h_dist < min_dis_to_hazard:
-
-                    # Minimum Distance
-                    min_dis_to_hazard = h_dist
-
-                    # Calculate the Hitting Angle (Only x,y Matter)
-                    hitting_direction = self.data.get_body_xvelp('robot')[0:2]
-                    robot_pos = self.world.robot_pos()
-                    robot_to_hazard_direction = (h_pos - robot_pos)[0:2]
-                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])
-
-                    # Compute the Projection Cost
-                    projection_cost = ((self.pillars_size + self.robot_keepout -0.3) + margin) ** 2 - ((robot_to_hazard_direction[0]) * np.sin(hitting_angle) - (robot_to_hazard_direction[1]) * np.cos(hitting_angle)) ** 2
-
-                else: continue
-
-            return projection_cost
-
-        elif self.constrain_pillars:
-
-            # Initialize Projection Cost
-            projection_cost, min_dis_to_pillar = 0, 1e8
-
-            for h_pos in self.pillars_pos:
-
-                # Compute the Distance
-                p_dist = self.dist_xy(h_pos)
-
-                if p_dist < min_dis_to_pillar:
-
-                    # Minimum Distance
-                    min_dis_to_pillar = p_dist
-
-                    # Calculate the Hitting Angle (Only x,y Matter)
-                    hitting_direction = self.data.get_body_xvelp('robot')[0:2]
-                    robot_pos = self.world.robot_pos()
-                    robot_to_pillar_direction = (h_pos - robot_pos)[0:2]
-                    hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])
-
-                    # Compute the Projection Cost
-                    projection_cost = ((self.pillars_size + self.robot_keepout -0.3) + margin) ** 2 - ((robot_to_pillar_direction[0]) * np.sin(hitting_angle) - (robot_to_pillar_direction[1]) * np.cos(hitting_angle)) ** 2
-
-                else: continue
-
-            return projection_cost
-
-        else: raise NotImplementedError
-
-    def projection_cost_index_argmin_dis(self, margin:float=0.4):
-
-        index = None
-
-        # Calculate the Projection Cost, Not Accounted in the Sum of Cost (Just for AdamBA Methods Simulating)
-        if self.constrain_hazards:
-
-            # Initialize Projection Cost and Counter
-            projection_cost, min_dis_to_hazard, cnt = 0, 1e8, -1
 
             for h_pos in self.hazards_pos:
 
@@ -1471,10 +1408,10 @@ class Engine(gym.Env, gym.utils.EzPickle):
                 # Compute the Distance
                 h_dist = self.dist_xy(h_pos)
 
-                if h_dist < min_dis_to_hazard:
+                if h_dist < min_dist:
 
                     # Minimum Distance and Counter
-                    min_dis_to_hazard, index = h_dist, cnt
+                    min_dist, index = h_dist, cnt
 
                     # Calculate the Hitting Angle (Only x,y Matter)
                     hitting_direction = self.data.get_body_xvelp('robot')[0:2]
@@ -1487,30 +1424,27 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 else: continue
 
-            return index
+            return projection_cost, index
 
         elif self.constrain_pillars:
 
-            # Initialize Projection Cost and Counter
-            projection_cost, min_dis_to_pillar, cnt = 0, 1e8, -1
-
-            for h_pos in self.pillars_pos:
+            for p_pos in self.pillars_pos:
 
                 # Increase Counter
                 cnt+=1
 
                 # Compute the Distance
-                p_dist = self.dist_xy(h_pos)
+                p_dist = self.dist_xy(p_pos)
 
-                if p_dist < min_dis_to_pillar:
+                if p_dist < min_dist:
 
                     # Minimum Distance and Counter
-                    min_dis_to_pillar, index = p_dist, cnt
+                    min_dist, index = p_dist, cnt
 
                     # Calculate the Hitting Angle (Only x,y Matter)
                     hitting_direction = self.data.get_body_xvelp('robot')[0:2]
                     robot_pos = self.world.robot_pos()
-                    robot_to_pillar_direction = (h_pos - robot_pos)[0:2]
+                    robot_to_pillar_direction = (p_pos - robot_pos)[0:2]
                     hitting_angle = np.arctan2(hitting_direction[1], hitting_direction[0])
 
                     # Compute the Projection Cost
@@ -1518,7 +1452,7 @@ class Engine(gym.Env, gym.utils.EzPickle):
 
                 else: continue
 
-            return index
+            return projection_cost, index
 
         else: raise NotImplementedError
 
